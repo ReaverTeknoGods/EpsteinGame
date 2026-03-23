@@ -1389,6 +1389,8 @@ class Game{
     if(CONTROL_SCHEME==='mouse'&&mouseDown){this.doAttack();mouseDown=false;}
     // Touch ATK button poll
     if(keys[' ']&&this.state==='playing'){this.doAttack();}
+    // Touch pickup button poll
+    if(keys.e&&this.state==='playing'){this.doPickup();}
     // Gamepad attack
     if(keys._padA)this.doAttack();
     if(keys._padX)this.doPickup();
