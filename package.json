@@ -1,0 +1,15 @@
+{
+  "name": "epstein-island-escape",
+  "version": "1.0.0",
+  "description": "Pakene Epsteinin saarelta - selaimessa pelattava toimintapeli",
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "deploy": "npx gh-pages -d ."
+  },
+  "keywords": ["game", "browser", "canvas"],
+  "license": "MIT",
+  "devDependencies": {
+    "gh-pages": "^6.1.0",
+    "serve": "^14.2.0"
+  }
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Epstein Island Escape</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#000;overflow:hidden;font-family:'Courier New',monospace;color:#fff;cursor:crosshair;}
+    canvas{display:block;margin:0 auto;image-rendering:pixelated;}
+    #overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;pointer-events:none;}
+    #overlay.active{pointer-events:all;}
+    #overlay .box{background:rgba(0,0,0,0.93);border:2px solid #c00;padding:36px 50px;text-align:center;max-width:720px;display:none;}
+    #overlay .box.show{display:block;}
+    #overlay h1{color:#f33;font-size:2.4em;text-shadow:0 0 20px #f00,0 0 40px #900;margin-bottom:10px;}
+    #overlay h2{color:#ff6;font-size:1.4em;margin-bottom:14px;}
+    #overlay p{color:#ccc;font-size:1em;line-height:1.6;margin-bottom:14px;}
+    #overlay .controls{color:#888;font-size:0.82em;margin-top:10px;}
+    #overlay .prompt{color:#f66;font-size:1.1em;margin-top:18px;animation:blink 1s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+    #hud{position:fixed;top:0;left:0;width:100%;padding:10px 20px;z-index:5;pointer-events:none;display:none;}
+    #hud.show{display:flex;justify-content:space-between;align-items:flex-start;}
+    .health-bar-bg{width:200px;height:20px;background:#333;border:2px solid #666;}
+    .health-bar{height:100%;background:#0f0;transition:width 0.3s,background 0.3s;}
+    .hud-text{color:#fff;font-size:14px;text-shadow:1px 1px 2px #000;margin-top:4px;}
+    .boss-hp-container{position:fixed;top:60px;left:50%;transform:translateX(-50%);text-align:center;z-index:6;display:none;}
+    .boss-hp-container.show{display:block;}
+    .boss-name{color:#f44;font-size:18px;font-weight:bold;text-shadow:0 0 10px #f00;}
+    .boss-hp-bg{width:400px;height:14px;background:#333;border:2px solid #f44;margin-top:4px;}
+    .boss-hp{height:100%;background:#f44;transition:width 0.3s;}
+    .lang-btn{display:inline-block;padding:12px 30px;margin:8px;background:rgba(200,0,0,0.3);border:2px solid #c00;color:#fff;font-family:'Courier New',monospace;font-size:1.1em;cursor:pointer;transition:background 0.2s;}
+    .lang-btn:hover{background:rgba(200,0,0,0.6);}
+    #mobile-controls{display:none;position:fixed;bottom:20px;left:0;width:100%;z-index:20;justify-content:space-between;padding:0 20px;}
+    @media(max-width:800px){#mobile-controls{display:flex;}}
+    .dpad{display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px;gap:4px;}
+    .dpad button,.action-buttons button{background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);color:#fff;font-size:20px;border-radius:8px;touch-action:manipulation;}
+    .action-buttons{display:flex;gap:10px;align-items:flex-end;}
+    .action-buttons button{width:60px;height:60px;font-size:14px;}
+    #devSkip{position:fixed;top:10px;right:10px;z-index:30;background:rgba(255,100,0,0.7);border:2px solid #f80;color:#fff;font-family:'Courier New',monospace;font-size:12px;padding:6px 14px;cursor:pointer;display:none;}
+    #devSkip:hover{background:rgba(255,100,0,0.9);}
+    body.dev #devSkip{display:block;}
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <button id="devSkip">SKIP [N]</button>
+  <div id="hud">
+    <div class="hud-left">
+      <div class="health-bar-bg"><div class="health-bar" id="healthBar"></div></div>
+      <div class="hud-text" id="hudLevel"></div>
+      <div class="hud-text" id="hudEnemies" style="color:#f88"></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-text" id="hudWeapon"></div>
+      <div class="hud-text" id="hudAmmo"></div>
+      <div class="hud-text" id="hudScore" style="color:#ff0"></div>
+    </div>
+  </div>
+  <div class="boss-hp-container" id="bossHp">
+    <div class="boss-name" id="bossName"></div>
+    <div class="boss-hp-bg"><div class="boss-hp" id="bossHpBar"></div></div>
+  </div>
+  <div id="overlay" class="active">
+    <div class="box show" id="controlBox">
+      <h1>🏝️ EPSTEIN ISLAND ESCAPE</h1>
+      <h2>Controls / Ohjaus</h2>
+      <div>
+        <span class="lang-btn" id="ctrlKB">⌨️ Keyboard / Näppäimistö</span>
+        <span class="lang-btn" id="ctrlMouse">🖱️ Mouse + KB / Hiiri + Näppis</span>
+      </div>
+      <p style="color:#888;font-size:0.8em;margin-top:10px">Gamepad & touch also supported / Padi ja kosketus tuettu</p>
+    </div>
+    <div class="box" id="langBox">
+      <h1>🏝️ EPSTEIN ISLAND ESCAPE</h1>
+      <h2>Choose Language / Valitse kieli</h2>
+      <div>
+        <span class="lang-btn" id="langFI">🇫🇮 Suomi</span>
+        <span class="lang-btn" id="langEN">🇬🇧 English</span>
+      </div>
+    </div>
+    <div class="box" id="menuBox">
+      <h1>🏝️ EPSTEIN ISLAND ESCAPE</h1>
+      <h2 id="menuSubtitle"></h2>
+      <p id="menuDesc"></p>
+      <div class="controls" id="menuControls"></div>
+      <div class="prompt" id="menuPrompt"></div>
+    </div>
+    <div class="box" id="levelBox">
+      <h2 id="levelTitle"></h2>
+      <p id="levelDesc"></p>
+      <div class="prompt" id="levelPrompt"></div>
+    </div>
+    <div class="box" id="deathBox">
+      <h1 id="deathTitle"></h1>
+      <p id="deathMsg"></p>
+      <div class="prompt" id="deathPrompt"></div>
+    </div>
+    <div class="box" id="victoryBox">
+      <h1 id="victoryTitle"></h1>
+      <p id="victoryDesc"></p>
+      <p style="color:#ff6" id="victoryThanks"></p>
+      <p style="color:#0ff;font-size:1.2em" id="victoryScore"></p>
+      <div class="prompt" id="victoryPrompt"></div>
+    </div>
+  </div>
+  <div id="mobile-controls">
+    <div class="dpad">
+      <div></div><button data-key="w">▲</button><div></div>
+      <button data-key="a">◄</button><div></div><button data-key="d">►</button>
+      <div></div><button data-key="s">▼</button><div></div>
+    </div>
+    <div class="action-buttons">
+      <button data-key="shift">🏃</button>
+      <button data-key="e">E</button>
+      <button data-key=" ">⚔️ATK</button>
+    </div>
+  </div>
+  <script src="js/game.js"></script>
+</body>
+</html>
