@@ -582,7 +582,7 @@ class Player{
       if(stepTimer>0.25){stepTimer=0;sfxStep();}
     }
     // Mouse aim: 8-way snapping
-    if(CONTROL_SCHEME==='mouse'&&cam){
+    if(CONTROL_SCHEME==='mouse'&&cam&&!touchJoyActive){
       const mx=mouseX-(this.cx()-cam.x),my=mouseY-(this.cy()-cam.y);
       if(Math.abs(mx)>5||Math.abs(my)>5){
         const angle=Math.atan2(my,mx);
@@ -591,6 +591,14 @@ class Player{
         const di=(snap%8+8)%8;
         this.dir={x:dirs[di][0],y:dirs[di][1]};
       }
+    }
+    // Touch joystick aim: use joystick direction for aiming (8-way snap)
+    if(touchJoyActive&&(Math.abs(touchJoyX)>0.1||Math.abs(touchJoyY)>0.1)){
+      const angle=Math.atan2(touchJoyY,touchJoyX);
+      const snap=Math.round(angle/(Math.PI/4));
+      const dirs=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+      const di=(snap%8+8)%8;
+      this.dir={x:dirs[di][0],y:dirs[di][1]};
     }
     this.animT+=dt;if(this.animT>0.15){this.animT=0;this.animF=(this.animF+1)%4;}
   }
@@ -1379,6 +1387,8 @@ class Game{
     pollGamepad();
     // Mouse attack
     if(CONTROL_SCHEME==='mouse'&&mouseDown){this.doAttack();mouseDown=false;}
+    // Touch ATK button poll
+    if(keys[' ']&&this.state==='playing'){this.doAttack();}
     // Gamepad attack
     if(keys._padA)this.doAttack();
     if(keys._padX)this.doPickup();
