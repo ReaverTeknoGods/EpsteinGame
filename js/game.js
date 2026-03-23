@@ -1305,6 +1305,27 @@ class Game{
   }
   doAttack(){
     if(!this.player||!this.player.alive)return;
+    // Auto-aim: snap to nearest visible enemy (keyboard & touch only, not mouse)
+    if(CONTROL_SCHEME!=='mouse'){
+      const p=this.player,px=p.cx(),py=p.cy();
+      const w=WEAPONS[p.weapon];
+      const maxR=(w.range||40)*2.5; // generous auto-aim radius
+      let best=null,bestD=Infinity;
+      const targets=[...this.enemies.filter(e=>e.alive)];
+      if(this.boss&&this.boss.alive)targets.push(this.boss);
+      for(const e of targets){
+        const d=dist(px,py,e.cx(),e.cy());
+        if(d<maxR&&d<bestD&&hasLOS(px,py,e.cx(),e.cy(),this.grid)){best=e;bestD=d;}
+      }
+      if(best){
+        const adx=best.cx()-px,ady=best.cy()-py;
+        const angle=Math.atan2(ady,adx);
+        const snap=Math.round(angle/(Math.PI/4));
+        const dirs=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+        const di=(snap%8+8)%8;
+        p.dir={x:dirs[di][0],y:dirs[di][1]};
+      }
+    }
     const atk=this.player.attack(this.grid);if(!atk)return;
     let{ox,oy,dx,dy,range,damage,ranged,grid}=atk;
     // Damage buff from mystery pickup
