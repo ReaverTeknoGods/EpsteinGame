@@ -32,8 +32,8 @@
     .lang-btn:hover{background:rgba(200,0,0,0.6);}
     #mobile-controls{display:none;position:fixed;bottom:20px;left:0;width:100%;z-index:20;justify-content:space-between;padding:0 20px;}
     @media(max-width:800px){#mobile-controls{display:flex;}}
-    .dpad{display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px;gap:4px;}
-    .dpad button,.action-buttons button{background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);color:#fff;font-size:20px;border-radius:8px;touch-action:manipulation;}
+    #joystickCanvas{background:rgba(255,255,255,0.08);border-radius:50%;touch-action:none;}
+    .action-buttons button{background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);color:#fff;font-size:20px;border-radius:8px;touch-action:manipulation;}
     .action-buttons{display:flex;gap:10px;align-items:flex-end;}
     .action-buttons button{width:60px;height:60px;font-size:14px;}
     #devSkip{position:fixed;top:10px;right:10px;z-index:30;background:rgba(255,100,0,0.7);border:2px solid #f80;color:#fff;font-family:'Courier New',monospace;font-size:12px;padding:6px 14px;cursor:pointer;display:none;}
@@ -104,11 +104,7 @@
     </div>
   </div>
   <div id="mobile-controls">
-    <div class="dpad">
-      <div></div><button data-key="w">▲</button><div></div>
-      <button data-key="a">◄</button><div></div><button data-key="d">►</button>
-      <div></div><button data-key="s">▼</button><div></div>
-    </div>
+    <canvas id="joystickCanvas" width="150" height="150" style="touch-action:none;"></canvas>
     <div class="action-buttons">
       <button data-key="shift">🏃</button>
       <button data-key="e">E</button>

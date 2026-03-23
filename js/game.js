@@ -28,10 +28,10 @@ fi:{
   hiScore:'Ennätys',
   mysteryGood:['HP +25!','Nopeus boost!','DMG +50%!','Ammo +15!'],
   mysteryBad:['Myrkky! HP -20','Hitaus!','Ammo katoaa!'],
-  pressEnter:'[ PAINA ENTER ALOITTAAKSESI ]',
-  continuePrompt:'[ PAINA ENTER JATKAAKSESI ]',
-  retryPrompt:'[ PAINA ENTER YRITTÄÄKSESI UUDELLEEN ]',
-  replayPrompt:'[ PAINA ENTER PELATAKSESI UUDELLEEN ]',
+  pressEnter:'[ PAINA ENTER / NAPAUTA ]',
+  continuePrompt:'[ PAINA ENTER / NAPAUTA ]',
+  retryPrompt:'[ PAINA ENTER / NAPAUTA ]',
+  replayPrompt:'[ PAINA ENTER / NAPAUTA ]',
   deathTitle:'💀 KUOLIT',
   victoryTitle:'🎉 PÄÄSIT PAKOON!',
   victoryDesc:'Onnistuit pakenemaan Epsteinin saarelta!\nVoitit Hillaryn, Trumpin, P Diddyn, Bill Gatesin ja Zombi-Epsteinin!\nMaailma saa tietää totuuden… vai peitetäänkö kaikki jälleen?',
@@ -68,10 +68,10 @@ en:{
   hiScore:'High Score',
   mysteryGood:['HP +25!','Speed boost!','DMG +50%!','Ammo +15!'],
   mysteryBad:['Poison! HP -20','Slowdown!','Ammo lost!'],
-  pressEnter:'[ PRESS ENTER TO START ]',
-  continuePrompt:'[ PRESS ENTER TO CONTINUE ]',
-  retryPrompt:'[ PRESS ENTER TO RETRY ]',
-  replayPrompt:'[ PRESS ENTER TO PLAY AGAIN ]',
+  pressEnter:'[ PRESS ENTER / TAP TO START ]',
+  continuePrompt:'[ PRESS ENTER / TAP TO CONTINUE ]',
+  retryPrompt:'[ PRESS ENTER / TAP TO RETRY ]',
+  replayPrompt:'[ PRESS ENTER / TAP TO PLAY AGAIN ]',
   deathTitle:'💀 YOU DIED',
   victoryTitle:'🎉 YOU ESCAPED!',
   victoryDesc:'You escaped Epstein\'s island!\nYou defeated Hillary, Trump, P Diddy, Bill Gates and Zombie-Epstein!\nThe world will know the truth… or will they cover it up again?',
@@ -455,6 +455,46 @@ document.querySelectorAll('[data-key]').forEach(b=>{
   b.addEventListener('touchstart',e=>{e.preventDefault();keys[b.dataset.key]=true;});
   b.addEventListener('touchend',e=>{e.preventDefault();keys[b.dataset.key]=false;});
 });
+// Virtual analog joystick
+let touchJoyX=0,touchJoyY=0,touchJoyActive=false;
+(function initJoystick(){
+  const jc=document.getElementById('joystickCanvas');
+  if(!jc)return;
+  const jctx=jc.getContext('2d');
+  const R=jc.width/2,deadzone=0.15;
+  let touchId=null;
+  function drawStick(sx,sy){
+    jctx.clearRect(0,0,jc.width,jc.height);
+    jctx.beginPath();jctx.arc(R,R,R-4,0,Math.PI*2);jctx.strokeStyle='rgba(255,255,255,0.3)';jctx.lineWidth=3;jctx.stroke();
+    jctx.beginPath();jctx.arc(R+sx*(R-20),R+sy*(R-20),22,0,Math.PI*2);jctx.fillStyle='rgba(255,255,255,0.5)';jctx.fill();
+    jctx.strokeStyle='rgba(255,255,255,0.7)';jctx.lineWidth=2;jctx.stroke();
+  }
+  drawStick(0,0);
+  function handleTouch(e){
+    e.preventDefault();
+    const rect=jc.getBoundingClientRect();
+    for(const t of e.changedTouches){
+      if(touchId!==null&&t.identifier!==touchId)continue;
+      const cx=t.clientX-rect.left-R,cy=t.clientY-rect.top-R;
+      let dist=Math.sqrt(cx*cx+cy*cy);
+      let nx=cx/(R-4),ny=cy/(R-4);
+      if(dist>(R-4)){nx=cx/dist;ny=cy/dist;}
+      if(Math.abs(nx)<deadzone)nx=0;if(Math.abs(ny)<deadzone)ny=0;
+      touchJoyX=nx;touchJoyY=ny;touchJoyActive=true;
+      touchId=t.identifier;
+      drawStick(nx,ny);
+    }
+  }
+  jc.addEventListener('touchstart',handleTouch,{passive:false});
+  jc.addEventListener('touchmove',handleTouch,{passive:false});
+  function endTouch(e){
+    for(const t of e.changedTouches){
+      if(t.identifier===touchId){touchId=null;touchJoyX=0;touchJoyY=0;touchJoyActive=false;drawStick(0,0);}
+    }
+  }
+  jc.addEventListener('touchend',endTouch,{passive:false});
+  jc.addEventListener('touchcancel',endTouch,{passive:false});
+})();
 // Mouse input
 window.addEventListener('mousemove',e=>{mouseX=e.clientX;mouseY=e.clientY;});
 window.addEventListener('mousedown',e=>{if(e.button===0)mouseDown=true;});
@@ -522,6 +562,8 @@ class Player{
     // Gamepad movement
     if(keys._padLX)dx+=keys._padLX;
     if(keys._padLY)dy+=keys._padLY;
+    // Touch joystick (analog)
+    if(touchJoyActive){dx+=touchJoyX;dy+=touchJoyY;}
     this.sprint=!!(keys.shift||keys._padRB);let spdMul=this.sprint?SPRINT_MULT:1;
     if(this.spdBuff>0)spdMul*=1.4;
     if(this.slowDebuff>0)spdMul*=0.5;
@@ -1178,6 +1220,11 @@ class Game{
     // Dev skip button
     const skipBtn=document.getElementById('devSkip');
     if(skipBtn)skipBtn.onclick=()=>this.devSkip();
+    // Touch tap on overlay boxes to proceed (mobile Enter replacement)
+    ['menuBox','levelBox','deathBox','victoryBox'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.addEventListener('click',()=>{ensureAudio();this.onEnter();});
+    });
   }
   goMenu(){
     this.state='menu';
